@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppForge — Build What You Need</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0e;
+    --surface: #141418;
+    --surface2: #1c1c22;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #ede9e2;
+    --text2: #9a9590;
+    --text3: #5e5c58;
+    --accent: #e8a84c;
+    --accent-dim: rgba(232,168,76,0.12);
+    --accent-text: #f5c97a;
+    --teal: #5ec4a8;
+    --teal-dim: rgba(94,196,168,0.1);
+    --user-bubble: #1e2030;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+
+  #app { min-height: 100vh; display: flex; flex-direction: column; }
+
+  .screen { display: none; flex-direction: column; min-height: 100vh; }
+  .screen.active { display: flex; }
+
+  /* ── LANDING ── */
+  #landing { align-items: center; justify-content: center; padding: 3rem 1.5rem; }
+  .landing-inner { max-width: 540px; width: 100%; }
+
+  .logo-mark { display: flex; align-items: center; gap: 10px; margin-bottom: 2.5rem; }
+  .logo-hex { width: 36px; height: 36px; }
+  .logo-name { font-family: Georgia, 'Times New Roman', serif; font-size: 1.2rem; font-weight: normal; letter-spacing: 0.04em; color: var(--text); }
+  .logo-name span { color: var(--accent); }
+
+  .landing-headline { font-family: Georgia, 'Times New Roman', serif; font-size: 2.6rem; font-weight: normal; line-height: 1.25; margin-bottom: 1.2rem; }
+  .landing-headline em { font-style: italic; color: var(--accent-text); }
+  .landing-sub { font-size: 1rem; color: var(--text2); line-height: 1.7; margin-bottom: 2.5rem; }
+
+  .context-label { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 0.75rem; }
+
+  .context-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 2rem; }
+
+  .context-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; cursor: pointer; transition: border-color 0.2s, background 0.2s; text-align: left; color: var(--text); }
+  .context-btn:hover { border-color: var(--border2); background: var(--surface2); }
+  .context-btn.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .context-btn .ctx-icon { font-size: 1.4rem; margin-bottom: 0.4rem; display: block; }
+  .context-btn .ctx-title { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 0.2rem; }
+  .context-btn .ctx-desc { display: block; font-size: 0.78rem; color: var(--text2); }
+
+  .begin-btn { width: 100%; padding: 0.95rem; background: var(--accent); color: #1a0e00; border: none; border-radius: var(--radius); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s; letter-spacing: 0.01em; }
+  .begin-btn:hover { opacity: 0.92; }
+  .begin-btn:active { transform: scale(0.99); }
+  .begin-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .landing-footer { margin-top: 2rem; font-size: 0.75rem; color: var(--text3); text-align: center; }
+
+  /* ── INTERVIEW ── */
+  #interview { flex-direction: column; height: 100vh; }
+
+  .interview-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .interview-logo { display: flex; align-items: center; gap: 8px; font-family: Georgia, serif; font-size: 0.9rem; color: var(--text2); }
+
+  .progress-track { display: flex; align-items: center; gap: 5px; }
+  .progress-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); transition: background 0.3s; }
+  .progress-dot.active { background: var(--accent); }
+  .progress-dot.done { background: var(--teal); }
+
+  .generate-btn { padding: 0.45rem 1rem; background: var(--accent); color: #1a0e00; border: none; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; display: none; }
+  .generate-btn.visible { display: block; }
+  .generate-btn:hover { opacity: 0.88; }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .chat-area { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; scroll-behavior: smooth; }
+  .chat-area::-webkit-scrollbar { width: 4px; }
+  .chat-area::-webkit-scrollbar-track { background: transparent; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .msg { max-width: 640px; width: fit-content; animation: fadeUp 0.25s ease; }
+  .msg.ai { align-self: flex-start; }
+  .msg.user { align-self: flex-end; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .msg-bubble { padding: 0.85rem 1.1rem; border-radius: var(--radius); font-size: 0.95rem; line-height: 1.65; }
+  .msg.ai .msg-bubble { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+  .msg.user .msg-bubble { background: var(--user-bubble); border: 1px solid rgba(255,255,255,0.1); color: var(--text); border-bottom-right-radius: 4px; }
+
+  .msg-label { font-size: 0.72rem; color: var(--text3); margin-bottom: 0.3rem; letter-spacing: 0.05em; text-transform: uppercase; }
+  .msg.user .msg-label { text-align: right; }
+
+  .typing-indicator { display: flex; gap: 5px; padding: 0.85rem 1.1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); border-bottom-left-radius: 4px; width: fit-content; }
+  .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); background: var(--accent); } }
+
+  .input-area { padding: 1rem 1.5rem 1.5rem; border-top: 1px solid var(--border); flex-shrink: 0; }
+  .input-row { display: flex; gap: 10px; align-items: flex-end; max-width: 640px; margin: 0 auto; }
+
+  .chat-input { flex: 1; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 0.75rem 1rem; color: var(--text); font-size: 0.95rem; font-family: inherit; resize: none; min-height: 44px; max-height: 140px; line-height: 1.5; outline: none; transition: border-color 0.2s; }
+  .chat-input::placeholder { color: var(--text3); }
+  .chat-input:focus { border-color: rgba(232,168,76,0.4); }
+
+  .send-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.2s; color: #1a0e00; }
+  .send-btn:hover { opacity: 0.88; }
+  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── RESULT ── */
+  #result { flex-direction: column; height: 100vh; }
+
+  .result-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .result-title { font-family: Georgia, serif; font-size: 1.1rem; font-weight: normal; }
+  .result-title span { color: var(--teal); font-style: italic; }
+
+  .result-actions { display: flex; gap: 8px; }
+  .action-btn { padding: 0.4rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8rem; cursor: pointer; transition: opacity 0.2s; font-weight: 500; border: 1px solid; }
+  .action-btn.copy { background: var(--teal-dim); border-color: rgba(94,196,168,0.3); color: var(--teal); }
+  .action-btn.download { background: var(--accent-dim); border-color: rgba(232,168,76,0.3); color: var(--accent-text); }
+  .action-btn.new { background: var(--surface); border-color: var(--border2); color: var(--text2); }
+  .action-btn.build { background: var(--accent); border-color: var(--accent); color: #1a0e00; font-weight: 600; }
+  .action-btn:hover { opacity: 0.8; }
+
+  .spec-container { flex: 1; overflow-y: auto; padding: 1.5rem; }
+  .spec-container::-webkit-scrollbar { width: 4px; }
+  .spec-container::-webkit-scrollbar-track { background: transparent; }
+  .spec-container::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .spec-box { max-width: 800px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+  .spec-tab-bar { display: flex; border-bottom: 1px solid var(--border); padding: 0 1rem; }
+  .spec-tab { padding: 0.65rem 1rem; font-size: 0.78rem; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.2s; }
+  .spec-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  .spec-content { padding: 1.5rem; font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace; font-size: 0.82rem; line-height: 1.8; color: var(--text); white-space: pre-wrap; word-break: break-word; display: none; }
+  .spec-rendered { padding: 1.5rem; display: none; }
+  .spec-rendered.active { display: block; }
+  .spec-content.active { display: block; }
+
+  .spec-rendered h1 { font-family: Georgia, serif; font-size: 1.5rem; font-weight: normal; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+  .spec-rendered h2 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-text); margin: 1.75rem 0 0.6rem; font-weight: 500; }
+  .spec-rendered h3 { font-size: 0.9rem; font-weight: 500; margin: 1rem 0 0.3rem; }
+  .spec-rendered p { color: var(--text2); font-size: 0.9rem; line-height: 1.7; margin-bottom: 0.7rem; }
+  .spec-rendered ul, .spec-rendered ol { margin: 0.3rem 0 0.8rem 1.2rem; }
+  .spec-rendered li { color: var(--text2); font-size: 0.88rem; margin-bottom: 0.25rem; line-height: 1.6; }
+  .spec-rendered code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.78rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.4em; color: var(--teal); }
+  .spec-rendered pre { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; overflow-x: auto; margin: 0.8rem 0; }
+  .spec-rendered pre code { background: none; border: none; padding: 0; font-size: 0.8rem; color: var(--text); }
+  .spec-rendered strong { color: var(--text); font-weight: 500; }
+  .spec-rendered blockquote { border-left: 3px solid var(--accent); padding: 0.5rem 1rem; background: var(--accent-dim); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 0.8rem 0; }
+  .spec-rendered blockquote p { margin: 0; color: var(--accent-text); }
+
+  /* ── LEAD CAPTURE MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; padding: 1.5rem; z-index: 100; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+
+  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 2rem; max-width: 440px; width: 100%; }
+  .modal-title { font-family: Georgia, serif; font-size: 1.3rem; font-weight: normal; margin-bottom: 0.5rem; }
+  .modal-title span { color: var(--accent-text); font-style: italic; }
+  .modal-sub { font-size: 0.88rem; color: var(--text2); margin-bottom: 1.5rem; line-height: 1.6; }
+
+  .modal-field { margin-bottom: 1rem; }
+  .modal-label { display: block; font-size: 0.75rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+  .modal-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 0.7rem 0.9rem; color: var(--text); font-size: 0.92rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
+  .modal-input:focus { border-color: rgba(232,168,76,0.4); }
+
+  .modal-actions { display: flex; gap: 8px; margin-top: 1.5rem; }
+  .modal-submit { flex: 1; padding: 0.8rem; background: var(--accent); color: #1a0e00; border: none; border-radius: var(--radius-sm); font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+  .modal-submit:hover { opacity: 0.88; }
+  .modal-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+  .modal-skip { padding: 0.8rem 1rem; background: transparent; border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text3); font-size: 0.88rem; cursor: pointer; transition: border-color 0.2s; }
+  .modal-skip:hover { border-color: var(--border2); color: var(--text2); }
+
+  .modal-success { text-align: center; padding: 1rem 0; }
+  .modal-success-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+  .modal-success-title { font-family: Georgia, serif; font-size: 1.1rem; margin-bottom: 0.5rem; }
+  .modal-success-text { font-size: 0.88rem; color: var(--text2); line-height: 1.6; }
+
+  .copy-flash { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--teal); color: #041a14; padding: 0.5rem 1.25rem; border-radius: 100px; font-size: 0.82rem; font-weight: 600; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
+  .copy-flash.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LANDING -->
+  <div id="landing" class="screen active">
+    <div class="landing-inner">
+      <div class="logo-mark">
+        <svg class="logo-hex" viewBox="0 0 36 36" fill="none">
+          <path d="M18 3L31.86 11V29L18 37L4.14 29V11L18 3Z" fill="rgba(232,168,76,0.12)" stroke="#e8a84c" stroke-width="1.2"/>
+          <path d="M12 18L16.5 22.5L24 15" stroke="#e8a84c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="18" cy="14" r="2" fill="#e8a84c" opacity="0.7"/>
+        </svg>
+        <span class="logo-name">App<span>Forge</span></span>
+      </div>
+
+      <h1 class="landing-headline">Describe the pain.<br>Get the <em>app.</em></h1>
+
+      <p class="landing-sub">
+        AppForge interviews you about what's slowing you down, then generates a complete build spec — or connects you with AntiGravity to have it built for you.
+      </p>
+
+      <p class="context-label">What kind of day are we building for?</p>
+
+      <div class="context-options">
+        <button class="context-btn selected" data-ctx="personal" onclick="selectContext(this, 'personal')">
+          <span class="ctx-icon">🏠</span>
+          <span class="ctx-title">Personal</span>
+          <span class="ctx-desc">Life, family, health, habits</span>
+        </button>
+        <button class="context-btn" data-ctx="professional" onclick="selectContext(this, 'professional')">
+          <span class="ctx-icon">💼</span>
+          <span class="ctx-title">Professional</span>
+          <span class="ctx-desc">Work, clinical, business</span>
+        </button>
+      </div>
+
+      <button class="begin-btn" onclick="startInterview()">Begin the interview →</button>
+
+      <p class="landing-footer">No account needed · Generates a Claude Code–ready spec</p>
+    </div>
+  </div>
+
+  <!-- INTERVIEW -->
+  <div id="interview" class="screen">
+    <div class="interview-header">
+      <div class="interview-logo">
+        <svg width="18" height="18" viewBox="0 0 36 36" fill="none">
+          <path d="M18 3L31.86 11V29L18 37L4.14 29V11L18 3Z" fill="rgba(232,168,76,0.12)" stroke="#e8a84c" stroke-width="1.2"/>
+          <path d="M12 18L16.5 22.5L24 15" stroke="#e8a84c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        AppForge
+      </div>
+      <div class="progress-track" id="progressDots">
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+      </div>
+      <button class="generate-btn" id="generateBtn" onclick="generateSpec()">Generate spec →</button>
+    </div>
+
+    <div class="chat-area" id="chatArea"></div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea class="chat-input" id="chatInput" placeholder="Tell me…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 13V3M3 8L8 3L13 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result" class="screen">
+    <div class="result-header">
+      <div class="result-title">Your app spec is <span>ready</span></div>
+      <div class="result-actions">
+        <button class="action-btn new" onclick="startOver()">← New</button>
+        <button class="action-btn copy" onclick="copySpec()">Copy</button>
+        <button class="action-btn download" onclick="downloadSpec()">Download .md</button>
+        <button class="action-btn build" onclick="showLeadModal()">Have it built →</button>
+      </div>
+    </div>
+
+    <div class="spec-container">
+      <div class="spec-box">
+        <div class="spec-tab-bar">
+          <div class="spec-tab active" onclick="switchTab('rendered', this)">Preview</div>
+          <div class="spec-tab" onclick="switchTab('raw', this)">Raw markdown</div>
+        </div>
+        <div class="spec-rendered active" id="specRendered"></div>
+        <div class="spec-content" id="specRaw"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- LEAD CAPTURE MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div id="modalForm">
+      <div class="modal-title">Have AntiGravity <span>build this</span></div>
+      <p class="modal-sub">We'll review your spec and reach out with a quote. Most apps ship within 2–3 weeks.</p>
+
+      <div class="modal-field">
+        <label class="modal-label" for="leadName">Your name</label>
+        <input class="modal-input" type="text" id="leadName" placeholder="Jane Smith" autocomplete="name">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label" for="leadEmail">Email address</label>
+        <input class="modal-input" type="email" id="leadEmail" placeholder="jane@example.com" autocomplete="email">
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-skip" onclick="hideLeadModal()">Maybe later</button>
+        <button class="modal-submit" id="modalSubmit" onclick="submitLead()">Send my spec →</button>
+      </div>
+    </div>
+
+    <div class="modal-success" id="modalSuccess" style="display:none">
+      <div class="modal-success-icon">✓</div>
+      <div class="modal-success-title">We've got your spec</div>
+      <p class="modal-success-text">You'll hear from us within 1 business day with a quote and timeline.</p>
+    </div>
+  </div>
+</div>
+
+<div class="copy-flash" id="copyFlash">Copied to clipboard</div>
+
+<script>
+  let state = {
+    context: 'personal',
+    messages: [],
+    questionCount: 0,
+    readyToGenerate: false,
+    specMarkdown: ''
+  };
+
+  function selectContext(el, ctx) {
+    document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    state.context = ctx;
+  }
+
+  async function startInterview() {
+    showScreen('interview');
+    state.messages = [];
+    state.questionCount = 0;
+    state.readyToGenerate = false;
+    document.getElementById('chatArea').innerHTML = '';
+    document.getElementById('generateBtn').classList.remove('visible');
+    updateProgress(0);
+
+    const opening = state.context === 'professional'
+      ? "What's the biggest pain point in your professional day — the thing that slows you down, wastes your time, or makes you wish there were a better way?"
+      : "What's the biggest pain point in your day — the thing that keeps grinding on you, eating up time you'd rather spend on something else?";
+
+    await addAIMessage(opening, false);
+    setInputEnabled(true);
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function updateProgress(count) {
+    const dots = document.querySelectorAll('#progressDots .progress-dot');
+    dots.forEach((dot, i) => {
+      dot.classList.remove('active', 'done');
+      if (i < count - 1) dot.classList.add('done');
+      else if (i === count - 1) dot.classList.add('active');
+    });
+  }
+
+  function addUserMessage(text) {
+    const area = document.getElementById('chatArea');
+    const el = document.createElement('div');
+    el.className = 'msg user';
+    el.innerHTML = `<div class="msg-label">You</div><div class="msg-bubble">${escapeHtml(text)}</div>`;
+    area.appendChild(el);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  async function addAIMessage(text, animate = true) {
+    const area = document.getElementById('chatArea');
+
+    if (animate) {
+      const typing = document.createElement('div');
+      typing.className = 'msg ai';
+      typing.id = 'typing';
+      typing.innerHTML = `<div class="msg-label">AppForge</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+      area.appendChild(typing);
+      area.scrollTop = area.scrollHeight;
+      await sleep(800 + Math.random() * 500);
+      const t = document.getElementById('typing');
+      if (t) t.remove();
+    }
+
+    const el = document.createElement('div');
+    el.className = 'msg ai';
+    el.innerHTML = `<div class="msg-label">AppForge</div><div class="msg-bubble">${escapeHtml(text)}</div>`;
+    area.appendChild(el);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || state.readyToGenerate) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    setInputEnabled(false);
+
+    addUserMessage(text);
+    state.messages.push({ role: 'user', content: text });
+    state.questionCount++;
+    updateProgress(state.questionCount);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: state.messages, context: state.context })
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const { text: raw } = await res.json();
+      const parsed = parseInterviewResponse(raw);
+
+      await addAIMessage(parsed.message);
+      state.messages.push({ role: 'assistant', content: parsed.message });
+
+      if (parsed.readyToGenerate) {
+        state.readyToGenerate = true;
+        document.getElementById('generateBtn').classList.add('visible');
+        document.getElementById('chatInput').placeholder = 'Click "Generate spec →" when ready';
+      } else {
+        setInputEnabled(true);
+        document.getElementById('chatInput').focus();
+      }
+    } catch (err) {
+      await addAIMessage("Sorry, I hit a snag. Try again in a moment.");
+      console.error(err);
+      setInputEnabled(true);
+    }
+  }
+
+  function parseInterviewResponse(raw) {
+    try {
+      return JSON.parse(raw.replace(/```json|```/g, '').trim());
+    } catch {
+      return { message: raw, readyToGenerate: false };
+    }
+  }
+
+  async function generateSpec() {
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generating…';
+
+    const area = document.getElementById('chatArea');
+    const el = document.createElement('div');
+    el.className = 'msg ai';
+    el.innerHTML = `<div class="msg-label">AppForge</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+    area.appendChild(el);
+    area.scrollTop = area.scrollHeight;
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: state.messages, context: state.context })
+      });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const { spec } = await res.json();
+      state.specMarkdown = spec;
+      renderSpec(spec);
+      showScreen('result');
+    } catch (err) {
+      el.remove();
+      btn.disabled = false;
+      btn.textContent = 'Generate spec →';
+      console.error(err);
+    }
+  }
+
+  function renderSpec(markdown) {
+    document.getElementById('specRaw').textContent = markdown;
+    document.getElementById('specRendered').innerHTML = markdownToHtml(markdown);
+  }
+
+  function markdownToHtml(md) {
+    return md
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^\> (.+)$/gm, '<blockquote><p>$1</p></blockquote>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
+      .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+      .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:1.5rem 0;">')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<[hupboel]|<li|<hr|<pre|<block)(.+)$/gm, '<p>$1</p>')
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p>(<[hupboel])/g, '$1')
+      .replace(/(<\/[hupboel][^>]*>)<\/p>/g, '$1');
+  }
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.spec-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    if (tab === 'rendered') {
+      document.getElementById('specRendered').classList.add('active');
+      document.getElementById('specRaw').classList.remove('active');
+    } else {
+      document.getElementById('specRaw').classList.add('active');
+      document.getElementById('specRendered').classList.remove('active');
+    }
+  }
+
+  function copySpec() {
+    navigator.clipboard.writeText(state.specMarkdown).then(() => {
+      const flash = document.getElementById('copyFlash');
+      flash.classList.add('show');
+      setTimeout(() => flash.classList.remove('show'), 2000);
+    });
+  }
+
+  function downloadSpec() {
+    const title = (state.specMarkdown.match(/^# (.+)$/m) || ['', 'app-spec'])[1]
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const blob = new Blob([state.specMarkdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function showLeadModal() {
+    document.getElementById('modalForm').style.display = 'block';
+    document.getElementById('modalSuccess').style.display = 'none';
+    document.getElementById('modalOverlay').classList.add('show');
+    setTimeout(() => document.getElementById('leadName').focus(), 100);
+  }
+
+  function hideLeadModal() {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+
+  async function submitLead() {
+    const name = document.getElementById('leadName').value.trim();
+    const email = document.getElementById('leadEmail').value.trim();
+    if (!email) { document.getElementById('leadEmail').focus(); return; }
+
+    const btn = document.getElementById('modalSubmit');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    try {
+      await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name, email,
+          context: state.context,
+          specMarkdown: state.specMarkdown,
+          transcript: state.messages
+        })
+      });
+      document.getElementById('modalForm').style.display = 'none';
+      document.getElementById('modalSuccess').style.display = 'block';
+      setTimeout(hideLeadModal, 3000);
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Send my spec →';
+      console.error(err);
+    }
+  }
+
+  function startOver() {
+    state = { context: 'personal', messages: [], questionCount: 0, readyToGenerate: false, specMarkdown: '' };
+    document.querySelectorAll('.context-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector('[data-ctx="personal"]').classList.add('selected');
+    showScreen('landing');
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }
+
+  function setInputEnabled(enabled) {
+    document.getElementById('chatInput').disabled = !enabled;
+    document.getElementById('sendBtn').disabled = !enabled;
+    if (enabled) document.getElementById('chatInput').focus();
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // Close modal on overlay click
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) hideLeadModal();
+  });
+</script>
+</body>
+</html>
